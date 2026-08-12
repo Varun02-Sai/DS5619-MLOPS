@@ -20,7 +20,12 @@ REQUIRED_KEYS = ["input_path", "input_format", "high_value_threshold", "output_p
 
 
 def load_config(path):
-    """Load a YAML config file and validate required keys are present."""
+    """Load a YAML config file and validate required keys are present.
+
+    Must raise ValueError naming the specific missing key if REQUIRED_KEYS
+    are not all present. Do not let this fail with a bare KeyError later.
+    """
+
     with open(path, "r") as file:
         config = yaml.safe_load(file)
 
@@ -35,9 +40,16 @@ def load_config(path):
 
 
 def load_transactions(path, fmt):
-    """Load transactions from path according to fmt."""
+    """Load transactions from `path`, using `fmt` ("csv" or "json") to decide
+    how to parse it — not by sniffing the file extension.
+
+    Must return a list of dicts. Every dict must have at least "amount"
+    (str or float) and "is_fraud" (str "True"/"False" or bool).
+    Raise ValueError for any fmt other than "csv" or "json".
+    """
+    
     if fmt not in ("csv", "json"):
-        raise ValueError(f"unsupported format: {fmt}")
+        raise ValueError(f"unknown input file format: {fmt}")
 
     with open(path, "r") as file:
         if fmt == "csv":
@@ -77,7 +89,12 @@ def load_transactions(path, fmt):
 
 
 def run_pipeline(config):
-    """Load data, compute the summary, and write it as JSON."""
+    """Load data per `config`, compute the same summary fields as
+    pipeline_hardcoded.py (n_transactions, total_amount, fraud_rate,
+    n_high_value, high_value_threshold), and write them as JSON to
+    config["output_path"]. Return the report dict as well.
+    """
+
     rows = load_transactions(
         config["input_path"],
         config["input_format"]
