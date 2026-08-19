@@ -53,8 +53,66 @@ def run_etl(config):
 
     Return the validation_report dict as well as writing it to disk.
     """
-    # TODO: implement
-    raise NotImplementedError
+    rows = extract(config["input_path"])
+    
+    suite = build_expectation_suite()
+    expectations_report = []
+    bad_rows = set()
+
+    for check_func, args in suite:
+        violations = check_func(rows, **args)
+        bad_indices = [v.row_index for v in violations]
+        bad_rows.update(bad_indices)
+        
+        args_clean = {}
+        for k, v in args.items():
+            if isinstance(v, (set, list, tuple)):
+                args_clean[k] = sorted(list(v))
+            else:
+                args_clean[k] = v
+
+        expectations_report.append({
+            "expectation": check_func.__name__,
+            "kwargs": args_clean,
+            "n_violations": len(violations),
+            "row_indices": bad_indices,
+            "violations": [
+                {"row_index": v.row_index, "column": v.column, "detail": v.detail}
+                for v in violations
+            ]
+        })
+
+    clean_rows = []
+    quarantine_rows = []
+    for i, row in enumerate(rows):
+        if i in bad_rows:
+            quarantine_rows.append(row)
+        else:
+            clean_rows.append(row)
+
+    headers = list(rows[0].keys()) if rows else []
+
+    with open(config["clean_output_path"], "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(clean_rows)
+
+    with open(config["quarantine_output_path"], "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(quarantine_rows)
+
+    report = {
+        "total_rows": len(rows),
+        "clean_rows": len(clean_rows),
+        "quarantined_rows": len(quarantine_rows),
+        "expectations": expectations_report,
+    }
+
+    with open(config["report_output_path"], "w") as f:
+        json.dump(report, f, indent=2)
+
+    return report
 
 
 def main():
