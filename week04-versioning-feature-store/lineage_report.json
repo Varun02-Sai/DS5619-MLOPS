@@ -1,0 +1,74 @@
+{
+  "feature_group": "card_activity",
+  "v1": {
+    "feature_group": {
+      "feature_group_version_id": "v1",
+      "name": "card_activity",
+      "source_raw_version_id": "v1",
+      "transform_version": "v1",
+      "schema": [
+        "avg_amount",
+        "card_id",
+        "event_time",
+        "max_amount",
+        "pct_card_present",
+        "txn_count"
+      ],
+      "row_count": 377,
+      "created_at": "2026-08-26T14:19:09.686998+00:00"
+    },
+    "raw_source": {
+      "version_id": "v1",
+      "source_path": "C:\\Users\\saiva\\Music\\MLOPS_LABS\\DS5619-MLOPS-main\\DS5619-MLOPS\\week04-versioning-feature-store\\data\\v1\\transactions.csv",
+      "content_hash": "103fa3d2eef895d2d3102537b6208199f9e921d53a1fd4e002c96417462ad815",
+      "columns": [
+        "transaction_id",
+        "card_id",
+        "timestamp",
+        "amount",
+        "merchant_category",
+        "country",
+        "card_present",
+        "is_fraud"
+      ],
+      "row_count": 500,
+      "created_at": "2026-08-26T14:19:09.675822+00:00"
+    }
+  },
+  "v2": {
+    "feature_group": {
+      "feature_group_version_id": "v2",
+      "name": "card_activity",
+      "source_raw_version_id": "v2",
+      "transform_version": "v1",
+      "schema": [
+        "avg_amount",
+        "card_id",
+        "event_time",
+        "max_amount",
+        "pct_card_present",
+        "txn_count"
+      ],
+      "row_count": 119,
+      "created_at": "2026-08-26T14:19:09.702798+00:00"
+    },
+    "raw_source": {
+      "version_id": "v2",
+      "source_path": "C:\\Users\\saiva\\Music\\MLOPS_LABS\\DS5619-MLOPS-main\\DS5619-MLOPS\\week04-versioning-feature-store\\data\\v2\\transactions.csv",
+      "content_hash": "9d08f6926adda90764241f1748c7180e0ae69389144ac8e6718929aa8aa766ab",
+      "columns": [
+        "transaction_id",
+        "card_id",
+        "timestamp",
+        "merchant_category",
+        "card_present",
+        "is_fraud",
+        "device_fingerprint",
+        "country_code",
+        "amount_minor_units"
+      ],
+      "row_count": 125,
+      "created_at": "2026-08-26T14:19:09.693345+00:00"
+    }
+  }
+}

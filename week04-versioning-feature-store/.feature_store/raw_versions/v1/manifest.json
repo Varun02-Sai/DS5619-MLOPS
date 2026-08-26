@@ -1,0 +1,17 @@
+{
+  "version_id": "v1",
+  "source_path": "C:\\Users\\saiva\\Music\\MLOPS_LABS\\DS5619-MLOPS-main\\DS5619-MLOPS\\week04-versioning-feature-store\\data\\v1\\transactions.csv",
+  "content_hash": "103fa3d2eef895d2d3102537b6208199f9e921d53a1fd4e002c96417462ad815",
+  "columns": [
+    "transaction_id",
+    "card_id",
+    "timestamp",
+    "amount",
+    "merchant_category",
+    "country",
+    "card_present",
+    "is_fraud"
+  ],
+  "row_count": 500,
+  "created_at": "2026-08-26T14:19:09.675822+00:00"
+}
