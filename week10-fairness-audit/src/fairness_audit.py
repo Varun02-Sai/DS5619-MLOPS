@@ -57,8 +57,23 @@ def compute_iou(box_a, box_b):
       4. union_area = area(box_a) + area(box_b) - intersection_area
       5. Return intersection_area / union_area, or 0.0 if union_area is 0.
     """
-    # TODO: implement
-    raise NotImplementedError
+    xa1, ya1 = box_a[0], box_a[1]
+    xa2, ya2 = xa1 + box_a[2], ya1 + box_a[3]
+
+    xb1, yb1 = box_b[0], box_b[1]
+    xb2, yb2 = xb1 + box_b[2], yb1 + box_b[3]
+
+    inter_w = max(0.0, min(xa2, xb2) - max(xa1, xb1))
+    inter_h = max(0.0, min(ya2, yb2) - max(ya1, yb1))
+    inter_area = inter_w * inter_h
+
+    area_a = box_a[2] * box_a[3]
+    area_b = box_b[2] * box_b[3]
+    union_area = area_a + area_b - inter_area
+
+    if union_area <= 0:
+        return 0.0
+    return inter_area / union_area
 
 
 # ---------------------------------------------------------------------------
@@ -78,8 +93,15 @@ def match_ground_truth(gt_boxes, detections, iou_threshold=0.3):
     detection CAN count as a match for more than one ground-truth box if it
     happens to overlap both (rare with real data, fine for this audit).
     """
-    # TODO: implement
-    raise NotImplementedError
+    matches = []
+    for gt in gt_boxes:
+        found = False
+        for d in detections:
+            if compute_iou(gt, d.bbox) >= iou_threshold:
+                found = True
+                break
+        matches.append(found)
+    return matches
 
 
 # ---------------------------------------------------------------------------
@@ -111,8 +133,44 @@ def audit_by_category(coco_path, fixtures_dir, iou_threshold=0.3, transform=None
     lookup from category_id -> category name, before the main loop. Image
     file paths are `os.path.join(fixtures_dir, image["file_name"])`.
     """
-    # TODO: implement
-    raise NotImplementedError
+    with open(coco_path) as f:
+        coco = json.load(f)
+
+    category_names = {cat["id"]: cat["name"] for cat in coco["categories"]}
+    annotations_by_image = defaultdict(list)
+    for ann in coco["annotations"]:
+        annotations_by_image[ann["image_id"]].append(ann)
+
+    totals = defaultdict(int)
+    detected = defaultdict(int)
+
+    for img_info in coco["images"]:
+        img_path = os.path.join(fixtures_dir, img_info["file_name"])
+        img = Image.open(img_path).convert("RGB")
+        if transform is not None:
+            img = transform(img)
+
+        detections = det.detect(img)
+        anns = annotations_by_image[img_info["id"]]
+        gt_boxes = [ann["bbox"] for ann in anns]
+        matches = match_ground_truth(gt_boxes, detections, iou_threshold=iou_threshold)
+
+        for ann, is_matched in zip(anns, matches):
+            cname = category_names[ann["category_id"]]
+            totals[cname] += 1
+            if is_matched:
+                detected[cname] += 1
+
+    results = {}
+    for cname, tot in totals.items():
+        if tot > 0:
+            det_count = detected[cname]
+            results[cname] = {
+                "total": tot,
+                "detected": det_count,
+                "recall": round(det_count / tot, 4),
+            }
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -126,5 +184,10 @@ def find_underperforming_categories(category_stats, recall_threshold=0.90):
     whose recall is BELOW recall_threshold, sorted worst-first (lowest
     recall first).
     """
-    # TODO: implement
-    raise NotImplementedError
+    under = []
+    for name, stats in category_stats.items():
+        if stats["recall"] < recall_threshold:
+            under.append((name, stats["recall"]))
+
+    under.sort(key=lambda item: item[1])
+    return under
