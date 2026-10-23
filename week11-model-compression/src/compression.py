@@ -44,8 +44,7 @@ def model_size_bytes(weights, dtype_bytes):
     stored using `dtype_bytes` bytes each (4 for FP32, 2 for FP16, 1 for
     INT8 — this week's "bits per parameter" framing, applied literally).
     """
-    # TODO: implement
-    raise NotImplementedError
+    return len(weights) * dtype_bytes
 
 
 # ---------------------------------------------------------------------------
@@ -65,8 +64,14 @@ def prune_weights(weights, sparsity):
       3. Return a copy of `weights` with those indices set to 0.0 (don't
          mutate the input list).
     """
-    # TODO: implement
-    raise NotImplementedError
+    n_prune = int(sparsity * len(weights))
+    if n_prune <= 0:
+        return list(weights)
+
+    sorted_indices = sorted(range(len(weights)), key=lambda i: abs(weights[i]))
+    prune_set = set(sorted_indices[:n_prune])
+
+    return [0.0 if i in prune_set else w for i, w in enumerate(weights)]
 
 
 # ---------------------------------------------------------------------------
@@ -86,8 +91,8 @@ def sparse_coo_size_bytes(weights, value_bytes=4, index_bytes=4):
     while enough weights are zero to pay for the extra index on every
     survivor.
     """
-    # TODO: implement
-    raise NotImplementedError
+    non_zero_count = sum(1 for w in weights if w != 0.0)
+    return non_zero_count * (value_bytes + index_bytes)
 
 
 # ---------------------------------------------------------------------------
@@ -114,8 +119,18 @@ def quantize_int8(weights):
 
     (dequantize_int8, given above, reverses this: w_approx = q * scale.)
     """
-    # TODO: implement
-    raise NotImplementedError
+    max_val = max((abs(w) for w in weights), default=0.0)
+    if max_val == 0.0:
+        return [0] * len(weights), 1.0
+
+    scale = max_val / 127.0
+    quantized = []
+    for w in weights:
+        q = round(w / scale)
+        clamped = max(-127, min(127, q))
+        quantized.append(clamped)
+
+    return quantized, scale
 
 
 # ---------------------------------------------------------------------------
@@ -140,5 +155,27 @@ def benchmark_model(label, weights, eval_examples, dtype_bytes, n_latency_reps=5
     time.perf_counter() before/after each pass), sum the per-pass times,
     divide by n_latency_reps, and convert seconds -> milliseconds.
     """
-    # TODO: implement
-    raise NotImplementedError
+    size = model_size_bytes(weights, dtype_bytes)
+
+    correct = 0
+    for ex in eval_examples:
+        if predict(weights, ex["features"]) == ex["label"]:
+            correct += 1
+    accuracy = round(correct / len(eval_examples), 4) if eval_examples else 0.0
+
+    total_time = 0.0
+    for _ in range(n_latency_reps):
+        t0 = time.perf_counter()
+        for ex in eval_examples:
+            predict(weights, ex["features"])
+        t1 = time.perf_counter()
+        total_time += (t1 - t0)
+
+    avg_ms = (total_time / n_latency_reps) * 1000.0 if n_latency_reps > 0 else 0.0
+
+    return {
+        "label": label,
+        "size_bytes": size,
+        "accuracy": accuracy,
+        "latency_ms_per_pass": round(avg_ms, 4),
+    }
